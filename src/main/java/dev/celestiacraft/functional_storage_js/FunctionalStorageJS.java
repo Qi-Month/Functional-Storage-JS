@@ -309,7 +309,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 	}
 
 	/**
-	 * 我说写那么长一串 {@code ResourceLocation.fromNamespaceAndPath()} 很烦有没有懂的
+	 * 我说写那么长一串 {@link ResourceLocation#fromNamespaceAndPath(String, String)} 很烦有没有懂的
 	 * @param namespace
 	 * @param path
 	 * @return

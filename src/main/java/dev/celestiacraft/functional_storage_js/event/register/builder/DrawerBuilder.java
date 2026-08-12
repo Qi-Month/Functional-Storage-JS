@@ -33,8 +33,6 @@ public class DrawerBuilder {
 
 	@Info("""
 			Sets the `log` block used by the drawer
-			
-			设置抽屉所使用的`原木`方块
 			""")
 	public DrawerBuilder log(Block block) {
 		log = getBlockId(block, "log");
@@ -43,8 +41,6 @@ public class DrawerBuilder {
 
 	@Info("""
 			Sets the planks block used by the drawer
-			
-			设置抽屉所使用的`木板`方块
 			""")
 	public DrawerBuilder planks(Block block) {
 		planks = getBlockId(block, "planks");
@@ -56,11 +52,6 @@ public class DrawerBuilder {
 			The `1x1`, `1x2` and `2x2` models use the path with `_1`, `_2` and `_4` appended.
 			Defaults to `functional_storage_js:block/<name>_front`,
 			which renders as the missing texture when no png is provided.
-			
-			设置基础正面纹理路径
-			`1x1`、`1x2` 和 `2x2` 模型会分别在该路径后追加 `_1`、`_2` 和 `_4`.
-			默认为 `functional_storage_js:block/<name>_front`,
-			如果没有提供对应的 png 文件, 则会显示为缺失纹理.
 			""")
 	public DrawerBuilder frontTexture(ResourceLocation texture) {
 		frontTexture = texture;
@@ -71,10 +62,6 @@ public class DrawerBuilder {
 			Sets the side texture path.
 			Defaults to `functional_storage_js:block/<name>_side`,
 			which renders as the missing texture when no png is provided.
-			
-			设置侧面纹理路径.
-			默认为 `functional_storage_js:block/<name>_side`,
-			如果没有提供对应的 png 文件，则会显示为缺失纹理.
 			""")
 	public DrawerBuilder sideTexture(ResourceLocation texture) {
 		sideTexture = texture;

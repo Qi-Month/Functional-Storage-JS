@@ -30,7 +30,10 @@ public class UpgradeBuilder {
 		return new UpgradeBuilder(id);
 	}
 
-	@Info("Sets the item storage multiplier. Defaults to the tier multiplier from the Functional Storage config.")
+	@Info("""
+			Sets the item storage multiplier.
+			Defaults to the tier multiplier from the Functional Storage config.
+			""")
 	public UpgradeBuilder multiplier(int multiplier) {
 		this.multiplier = multiplier;
 		return this;
@@ -38,8 +41,6 @@ public class UpgradeBuilder {
 
 	@Info("""
 			Sets the fluid storage multiplier shown in the tooltip, Defaults to the item `multiplier / 2`.
-			
-			设置提示信息中显示的流体存储倍率, 默认为物品 `multiplier / 2`.
 			""")
 	public UpgradeBuilder fluidMultiplier(double multiplier) {
 		fluidMultiplier = multiplier;
@@ -48,8 +49,6 @@ public class UpgradeBuilder {
 
 	@Info("""
 			Sets the controller radius multiplier shown in the tooltip, Defaults to the `fluid multiplier / 2`.
-			
-			设置提示信息中显示的控制器半径倍率, 默认为 `fluid multiplier / 2`.
 			""")
 	public UpgradeBuilder rangeMultiplier(double multiplier) {
 		rangeMultiplier = multiplier;
@@ -58,8 +57,6 @@ public class UpgradeBuilder {
 
 	@Info("""
 			Sets the item icon texture path, Defaults to `<namespace>:item/upgrade/<name>`.
-			
-			设置物品图标的纹理路径, 默认为 `<namespace>:item/upgrade/<name>`
 			""")
 	public UpgradeBuilder texture(ResourceLocation texture) {
 		this.texture = texture;
@@ -68,8 +65,6 @@ public class UpgradeBuilder {
 
 	@Info("""
 			Adds extra tooltip lines
-			
-			添加额外的 `Tooltip`
 			""")
 	public UpgradeBuilder tooltip(Consumer<List<Component>> consumer) {
 		consumer.accept(tooltip);
@@ -78,8 +73,6 @@ public class UpgradeBuilder {
 
 	@Info("""
 			Whether the item shows the enchantment glint (default false)
-			
-			是否显示附魔光效(默认为 `false`)
 			""")
 	public UpgradeBuilder foil(boolean foil) {
 		this.foil = foil;
@@ -88,8 +81,6 @@ public class UpgradeBuilder {
 
 	@Info("""
 			Whether the item is added to the Functional Storage creative tab (default true)
-			
-			是否将该物品添加到 Functional Storage 的创造模式物品栏中(默认为 `true`)
 			""")
 	public UpgradeBuilder addToTab(boolean addToTab) {
 		this.addToTab = addToTab;

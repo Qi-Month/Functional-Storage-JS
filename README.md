@@ -6,7 +6,7 @@ A KubeJS addon that allows you to directly register **Functional Storage Drawers
 
 ```js
 FunctionalStorageJSEvents.register((event) => {
-    event.addDrawer("cmi:rubberwood", (builder) => {
+    event.addDrawer("rubberwood", (builder) => {
         builder.log("minecraft:stone")
             .planks("minecraft:stone_bricks")
             .frontTexture("kubejs:block/aaaa/rubberwood_front")

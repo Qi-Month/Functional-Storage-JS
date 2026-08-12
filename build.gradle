@@ -1,0 +1,169 @@
+buildscript {
+	repositories {
+		maven {
+			url = 'https://repo.spongepowered.org/repository/maven-public/'
+		}
+		mavenCentral()
+	}
+	dependencies {
+		classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+	}
+}
+
+plugins {
+	id 'eclipse'
+	id 'idea'
+	id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+	id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+}
+
+apply plugin: 'org.spongepowered.mixin'
+
+group = mod_group_id
+version = mod_version
+
+base {
+	archivesName = "FunctionalStorageJS"
+}
+
+java {
+	toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+minecraft {
+	mappings channel: mapping_channel, version: mapping_version
+	copyIdeResources = true
+	runs {
+		configureEach {
+			workingDirectory project.file('run')
+			property 'forge.logging.markers', 'REGISTRIES'
+			property 'forge.logging.console.level', 'debug'
+
+			mods {
+				"${mod_id}" {
+					source sourceSets.main
+				}
+			}
+		}
+
+		client {
+			property 'forge.enabledGameTestNamespaces', mod_id
+		}
+
+		server {
+			property 'forge.enabledGameTestNamespaces', mod_id
+			args '--nogui'
+		}
+
+		gameTestServer {
+			property 'forge.enabledGameTestNamespaces', mod_id
+		}
+
+		data {
+			workingDirectory project.file('run-data')
+
+			args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+		}
+	}
+}
+
+mixin {
+	add sourceSets.main, "${mod_id}.refmap.json"
+
+	config "${mod_id}.mixins.json"
+}
+
+sourceSets.main.resources {
+	srcDir 'src/generated/resources'
+}
+
+repositories {
+	maven {
+		name = "CurseForge"
+		url "https://cursemaven.com"
+	}
+	maven {
+		name = "Latvian Mods (KubeJS, Rhino)"
+		url = "https://maven.latvian.dev/releases"
+	}
+	maven {
+		name = "Architectury"
+		url = "https://maven.architectury.dev/"
+	}
+	maven {
+		name = "JEI"
+		url = "https://dvs1.progwml6.com/files/maven/"
+	}
+	maven {
+		name = "BlameJared"
+		url = "https://maven.blamejared.com"
+	}
+}
+
+dependencies {
+	minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+	// JEI
+	compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+	compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+	compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+	runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
+	// Functional Storage
+	implementation fg.deobf("curse.maven:functional-storage-556861:8412552")
+	// Titanium
+	implementation fg.deobf("curse.maven:titanium-287342:8426836")
+	// Jade
+	implementation fg.deobf("curse.maven:jade-324717:6106101")
+	// KubeJS
+	implementation fg.deobf("dev.architectury:architectury-forge:9.2.14")
+	implementation fg.deobf("dev.latvian.mods:rhino-forge:2001.2.3-build.10")
+	implementation fg.deobf("dev.latvian.mods:kubejs-forge:2001.6.5-build.26")
+	// ProbeJS
+	runtimeOnly fg.deobf("curse.maven:probejs-585406:5227399")
+	// Lomkok
+	compileOnly 'org.projectlombok:lombok:1.18.28'
+	annotationProcessor 'org.projectlombok:lombok:1.18.28'
+
+	annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+tasks.named('processResources', ProcessResources).configure {
+	var replaceProperties = [
+			minecraft_version      : minecraft_version,
+			minecraft_version_range: minecraft_version_range,
+			forge_version          : forge_version,
+			forge_version_range    : forge_version_range,
+			loader_version_range   : loader_version_range,
+			mod_id                 : mod_id,
+			mod_name               : mod_name,
+			mod_license            : mod_license,
+			mod_version            : mod_version,
+			mod_authors            : mod_authors,
+			mod_description        : mod_description,
+	]
+	inputs.properties replaceProperties
+
+	filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+		expand replaceProperties + [project: project]
+	}
+}
+
+tasks.named('jar', Jar).configure {
+	manifest {
+		attributes([
+				'Specification-Title'     : mod_id,
+				'Specification-Vendor'    : mod_authors,
+				'Specification-Version'   : '1',
+				'Implementation-Title'    : project.name,
+				'Implementation-Version'  : project.jar.archiveVersion,
+				'Implementation-Vendor'   : mod_authors,
+				'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+		])
+	}
+
+	finalizedBy 'reobfJar'
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.compilerArgs << "-parameters"
+}

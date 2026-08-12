@@ -1,0 +1,1 @@
+dev.celestiacraft.functional_storage_js.FunctionalStorageJS

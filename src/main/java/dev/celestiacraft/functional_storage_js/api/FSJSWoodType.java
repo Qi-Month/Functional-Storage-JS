@@ -60,4 +60,3 @@ public class FSJSWoodType implements IWoodType {
 		return name;
 	}
 }
-

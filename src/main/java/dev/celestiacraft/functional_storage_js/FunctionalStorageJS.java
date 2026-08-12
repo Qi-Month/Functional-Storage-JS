@@ -1,29 +1,43 @@
 package dev.celestiacraft.functional_storage_js;
 
 import com.buuz135.functionalstorage.FunctionalStorage;
-import com.buuz135.functionalstorage.util.IWoodType;
+import com.buuz135.functionalstorage.item.StorageUpgradeItem;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import dev.celestiacraft.functional_storage_js.api.FSJSWoodType;
-import dev.celestiacraft.functional_storage_js.event.DrawerBuilder;
-import dev.celestiacraft.functional_storage_js.event.FunctionalStorageJSEventGroup;
-import dev.celestiacraft.functional_storage_js.event.FunctionalStorageRegisterEventJS;
+import dev.celestiacraft.functional_storage_js.common.register.FSJSBlockEntity;
+import dev.celestiacraft.functional_storage_js.common.register.FSJSBlocks;
+import dev.celestiacraft.functional_storage_js.common.register.FSJSItems;
+import dev.celestiacraft.functional_storage_js.event.FunctionalStorageJSEvents;
+import dev.celestiacraft.functional_storage_js.event.register.FunctionalStorageRegisterEventJS;
+import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuilder;
+import dev.celestiacraft.functional_storage_js.event.register.builder.UpgradeBuilder;
+import dev.latvian.mods.kubejs.KubeJSPaths;
 import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.client.LangEventJS;
 import dev.latvian.mods.kubejs.generator.AssetJsonGenerator;
 import dev.latvian.mods.kubejs.generator.DataJsonGenerator;
 import dev.latvian.mods.kubejs.script.BindingsEvent;
 import dev.latvian.mods.kubejs.script.ScriptType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.RegistryObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Mod(FunctionalStorageJS.MODID)
@@ -34,10 +48,11 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 	private static final int[] DRAWER_SLOTS = {1, 2, 4};
 	private static final List<DrawerBuilder> REGISTERED_DRAWERS = new ArrayList<>();
-	private static boolean pushedWoodTypes = false;
+	private static final List<UpgradeBuilder> REGISTERED_UPGRADES = new ArrayList<>();
+	private static boolean drawersRegistered = false;
 
 	public static ResourceLocation loadResource(String path) {
-		return ResourceLocation.fromNamespaceAndPath(MODID, path);
+		return loc(MODID, path);
 	}
 
 	public FunctionalStorageJS() {
@@ -45,7 +60,10 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 	public FunctionalStorageJS(FMLJavaModLoadingContext context) {
 		IEventBus bus = context.getModEventBus();
-		pushWoodTypes();
+
+		FSJSBlocks.register(bus);
+		FSJSBlockEntity.register(bus);
+		FSJSItems.register(bus);
 	}
 
 	@Override
@@ -56,48 +74,31 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 	@Override
 	public void registerEvents() {
-		FunctionalStorageJSEventGroup.init();
+		FunctionalStorageJSEvents.init();
 	}
 
 	@Override
 	public void initStartup() {
 		FunctionalStorageRegisterEventJS event = new FunctionalStorageRegisterEventJS();
-		FunctionalStorageJSEventGroup.REGISTER.post(ScriptType.STARTUP, event);
+		FunctionalStorageJSEvents.REGISTER.post(ScriptType.STARTUP, event);
 		REGISTERED_DRAWERS.addAll(event.getValidDrawers());
 
 		LOGGER.info("Collected {} drawer wood type(s) from KubeJS startup scripts", REGISTERED_DRAWERS.size());
-		pushWoodTypes();
+		registerDrawers();
+
+		REGISTERED_UPGRADES.addAll(event.getUpgrades());
+		FSJSItems.registerUpgrades(REGISTERED_UPGRADES);
+		LOGGER.info("Collected {} drawer upgrade(s) from KubeJS startup scripts", REGISTERED_UPGRADES.size());
 	}
 
-	/**
-	 * Pushes all collected drawer wood types into {@link FunctionalStorage#WOOD_TYPES}.
-	 * <p>
-	 * Called from both the {@code @Mod} constructor (runs during mod construction, before
-	 * Functional Storage consumes WOOD_TYPES) and {@link #initStartup()} (runs after the KubeJS
-	 * startup scripts have been executed). The {@code pushedWoodTypes} flag makes sure the types
-	 * are only added once, no matter which call gets there first.
-	 */
-	private static synchronized void pushWoodTypes() {
-		if (pushedWoodTypes) {
+	private static void registerDrawers() {
+		if (drawersRegistered) {
 			return;
 		}
 
-		List<IWoodType> woodTypes = new ArrayList<>();
-
-		for (DrawerBuilder drawer : REGISTERED_DRAWERS) {
-			woodTypes.add(FSJSWoodType.of(drawer.getName(), drawer.getLog(), drawer.getPlanks()));
-		}
-
-		if (woodTypes.isEmpty()) {
-			LOGGER.info("No drawer wood types to push into FunctionalStorage.WOOD_TYPES yet ({} collected)", REGISTERED_DRAWERS.size());
-			return;
-		}
-
-		FunctionalStorage.WOOD_TYPES.addAll(woodTypes);
-		pushedWoodTypes = true;
-		LOGGER.info("Pushed {} drawer wood type(s) into FunctionalStorage.WOOD_TYPES: {}",
-				woodTypes.size(),
-				woodTypes.stream().map(IWoodType::getName).collect(Collectors.joining(", ")));
+		FSJSBlocks.registerDrawers(REGISTERED_DRAWERS);
+		FSJSBlockEntity.registerDrawers(REGISTERED_DRAWERS);
+		drawersRegistered = true;
 	}
 
 	@Override
@@ -107,37 +108,129 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 			for (int slots : DRAWER_SLOTS) {
 				String base = name + "_" + slots;
-				String model = "functionalstorage:block/" + base;
+				String model = drawer.getNamespace() + ":block/" + base;
 				String locked = model + "_locked";
 				String front = drawer.getFrontTexture() + "_" + slots;
 				String side = drawer.getSideTexture().toString();
 
-				generator.blockModel(loc("functionalstorage", base), (modelGenerator) -> {
+				generator.blockModel(loc(drawer.getNamespace(), base), (modelGenerator) -> {
 					modelGenerator.parent("functionalstorage:block/base_x_" + slots);
 					modelGenerator.texture("particle", front);
 					modelGenerator.texture("front", front);
 					modelGenerator.texture("side", side);
 				});
 
-				generator.blockModel(loc("functionalstorage", base + "_locked"), (modelGenerator) -> {
+				generator.blockModel(loc(drawer.getNamespace(), base + "_locked"), (modelGenerator) -> {
 					modelGenerator.parent(model);
 					modelGenerator.texture("lock_icon", "functionalstorage:block/lock");
 				});
 
-				generator.blockState(loc("functionalstorage", base), state -> {
-					state.variant("locked=false,subfacing=east", (variant) -> variant.model(model).y(90).uvlock());
-					state.variant("locked=false,subfacing=north", (variant) -> variant.model(model).uvlock());
-					state.variant("locked=false,subfacing=south", (variant) -> variant.model(model).y(180).uvlock());
-					state.variant("locked=false,subfacing=west", (variant) -> variant.model(model).y(270).uvlock());
-					state.variant("locked=true,subfacing=east", (variant) -> variant.model(locked).y(90).uvlock());
-					state.variant("locked=true,subfacing=north", (variant) -> variant.model(locked).uvlock());
-					state.variant("locked=true,subfacing=south", (variant) -> variant.model(locked).y(180).uvlock());
-					state.variant("locked=true,subfacing=west", (variant) -> variant.model(locked).y(270).uvlock());
+				generator.blockState(loc(drawer.getNamespace(), base), (state) -> {
+					state.variant("locked=false,subfacing=east", (variant) -> {
+						variant.model(model)
+								.y(90)
+								.uvlock();
+					});
+					state.variant("locked=false,subfacing=north", (variant) -> {
+						variant.model(model)
+								.uvlock();
+					});
+					state.variant("locked=false,subfacing=south", (variant) -> {
+						variant.model(model)
+								.y(180)
+								.uvlock();
+					});
+					state.variant("locked=false,subfacing=west", (variant) -> {
+						variant.model(model)
+								.y(270)
+								.uvlock();
+					});
+					state.variant("locked=true,subfacing=east", (variant) -> {
+						variant.model(locked)
+								.y(90)
+								.uvlock();
+					});
+					state.variant("locked=true,subfacing=north", (variant) -> {
+						variant.model(locked)
+								.uvlock();
+					});
+					state.variant("locked=true,subfacing=south", (variant) -> {
+						variant.model(locked)
+								.y(180)
+								.uvlock();
+					});
+					state.variant("locked=true,subfacing=west", (variant) -> {
+						variant.model(locked)
+								.y(270)
+								.uvlock();
+					});
 				});
 
-				generator.itemModel(loc("functionalstorage", base), (modelGenerator) -> modelGenerator.parent("minecraft:builtin/entity"));
+				generator.itemModel(loc(drawer.getNamespace(), base), (modelGenerator) -> {
+					modelGenerator.parent("minecraft:builtin/entity");
+				});
+				copyFrontTexture(generator, drawer, slots);
 			}
 		}
+
+		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
+			generator.itemModel(upgrade.getId(), (modelGenerator) -> {
+				modelGenerator.parent("minecraft:item/generated");
+				modelGenerator.texture("layer0", upgrade.getTexture().toString());
+			});
+		}
+	}
+
+	/**
+	 * Functional Storage 的抽屉 GUI 始终会从 `functionalstorage:textures/block/<name>_front_<slots>.png` 读取正面纹理
+	 * <p>
+	 * 而不会使用方块模型中由 `DrawerBuilder#frontTexture` 指定的自定义纹理。
+	 * <p>
+	 * 为了使 GUI 能够支持任意纹理位置, 需要将源正面纹理临时复制到 KubeJS 生成的资源包中的这个固定路径下
+	 *
+	 * @param generator
+	 * @param drawer
+	 * @param slots
+	 */
+	private static void copyFrontTexture(AssetJsonGenerator generator, DrawerBuilder drawer, int slots) {
+		ResourceLocation frontBase = drawer.getFrontTexture();
+		ResourceLocation source = loc(frontBase.getNamespace(), "textures/" + frontBase.getPath() + "_" + slots + ".png");
+		ResourceLocation target = loc("functionalstorage", "textures/block/" + drawer.getName() + "_front_" + slots + ".png");
+
+		byte[] bytes = readTexture(source);
+
+		if (bytes != null) {
+			generator.add(target, () -> bytes);
+		} else {
+			LOGGER.warn("Could not find front texture {}, the drawer GUI will use the missing texture", source);
+		}
+	}
+
+	private static byte[] readTexture(ResourceLocation id) {
+		// 优先使用资源管理器, 这样也能支持来自 Mod 文件的纹理
+		try {
+			ResourceManager manager = Minecraft.getInstance().getResourceManager();
+			Optional<Resource> resource = manager.getResource(id);
+
+			if (resource.isPresent()) {
+				try (InputStream inputStream = resource.get().open()) {
+					return inputStream.readAllBytes();
+				}
+			}
+		} catch (Exception ignored) {
+		}
+
+		// 备用方案: 使用 `kubejs/assets/<namespace>/<path>` 中的文件
+		try {
+			Path path = KubeJSPaths.ASSETS.resolve(id.getNamespace() + "/" + id.getPath());
+
+			if (Files.exists(path)) {
+				return Files.readAllBytes(path);
+			}
+		} catch (Exception ignored) {
+		}
+
+		return null;
 	}
 
 	@Override
@@ -146,9 +239,15 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 			String name = drawer.getName();
 			String display = toDisplayName(name);
 
-			event.add("functionalstorage", "block.functionalstorage." + name + "_1", display + " Drawer (1x1)");
-			event.add("functionalstorage", "block.functionalstorage." + name + "_2", display + " Drawer (1x2)");
-			event.add("functionalstorage", "block.functionalstorage." + name + "_4", display + " Drawer (2x2)");
+			event.add(drawer.getNamespace(), "block." + drawer.getNamespace() + "." + name + "_1", display + " Drawer (1x1)");
+			event.add(drawer.getNamespace(), "block." + drawer.getNamespace() + "." + name + "_2", display + " Drawer (1x2)");
+			event.add(drawer.getNamespace(), "block." + drawer.getNamespace() + "." + name + "_4", display + " Drawer (2x2)");
+		}
+
+		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
+			event.add(upgrade.getId().getNamespace(),
+					"item." + upgrade.getId().getNamespace() + "." + upgrade.getId().getPath(),
+					toDisplayName(upgrade.getId().getPath()));
 		}
 	}
 
@@ -158,29 +257,73 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 		for (DrawerBuilder drawer : REGISTERED_DRAWERS) {
 			for (int slots : DRAWER_SLOTS) {
-				values.add("functionalstorage:" + drawer.getName() + "_" + slots);
+				values.add(drawer.getNamespace() + ":" + drawer.getName() + "_" + slots);
 			}
 		}
 
 		if (!values.isEmpty()) {
-			JsonObject tag = new JsonObject();
-			tag.addProperty("replace", false);
-			tag.add("values", values);
-			generator.json(ResourceLocation.fromNamespaceAndPath("minecraft", "tags/blocks/mineable/axe"), tag);
+			JsonObject json = new JsonObject();
+
+			json.addProperty("replace", false);
+			json.add("values", values);
+			generator.json(ResourceLocation.withDefaultNamespace("tags/blocks/mineable/axe"), json);
+		}
+
+		JsonArray upgradeValues = new JsonArray();
+
+		for (StorageUpgradeItem.StorageTier tier : StorageUpgradeItem.StorageTier.values()) {
+			RegistryObject<Item> upgradeItem = FunctionalStorage.STORAGE_UPGRADES.get(tier);
+
+			if (upgradeItem != null && upgradeItem.isPresent()) {
+				upgradeValues.add(upgradeItem.getId().toString());
+			}
+		}
+
+		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
+			upgradeValues.add(upgrade.getId().toString());
+		}
+
+		if (!upgradeValues.isEmpty()) {
+			JsonObject json = new JsonObject();
+
+			json.addProperty("replace", false);
+			json.add("values", upgradeValues);
+			generator.json(loc("functionalstorage", "tags/items/upgrades"), json);
+		}
+
+		JsonArray drawerItemValues = new JsonArray();
+
+		for (DrawerBuilder drawer : REGISTERED_DRAWERS) {
+			for (int slots : DRAWER_SLOTS) {
+				drawerItemValues.add(drawer.getNamespace() + ":" + drawer.getName() + "_" + slots);
+			}
+		}
+
+		if (!drawerItemValues.isEmpty()) {
+			JsonObject drawerTag = new JsonObject();
+
+			drawerTag.addProperty("replace", false);
+			drawerTag.add("values", drawerItemValues);
+			generator.json(loc("functionalstorage", "tags/items/drawer"), drawerTag);
 		}
 	}
 
+	/**
+	 * 我说写那么长一串 {@code ResourceLocation.fromNamespaceAndPath()} 很烦有没有懂的
+	 * @param namespace
+	 * @param path
+	 * @return
+	 */
 	private static ResourceLocation loc(String namespace, String path) {
 		return ResourceLocation.fromNamespaceAndPath(namespace, path);
 	}
 
 	private static String toDisplayName(String name) {
-		return Arrays.stream(name.split("_"))
-				.map((string) -> {
-					return string.isEmpty()
-							? string
-							: Character.toUpperCase(string.charAt(0)) + string.substring(1);
-				})
-				.collect(Collectors.joining(" "));
+		return Arrays.stream(name.split("_")).map((string) -> {
+			return string.isEmpty()
+					? string
+					: Character.toUpperCase(string.charAt(0))
+					+ string.substring(1);
+		}).collect(Collectors.joining(" "));
 	}
 }

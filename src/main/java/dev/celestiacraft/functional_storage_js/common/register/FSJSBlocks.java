@@ -8,6 +8,7 @@ import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuil
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -15,11 +16,13 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class FSJSBlocks {
-
 	private static final List<DrawerBuilder> DRAWERS = new ArrayList<>();
+	private static final Map<ResourceLocation, RegistryObject<Block>> REGISTERED_BLOCKS = new HashMap<>();
 	private static boolean registered = false;
 
 	public static final DeferredRegister<Block> BLOCKS =
@@ -53,16 +56,7 @@ public class FSJSBlocks {
 	}
 
 	public static RegistryObject<Block> getBlock(ResourceLocation id) {
-		return BLOCKS.getEntries()
-				.stream()
-				.filter((entry) -> {
-					return entry.getId().equals(id);
-				})
-				.map((entry) -> {
-					return (RegistryObject<Block>) entry;
-				})
-				.findFirst()
-				.orElse(null);
+		return REGISTERED_BLOCKS.get(id);
 	}
 
 	private static void registerDrawerBlocks() {
@@ -73,37 +67,36 @@ public class FSJSBlocks {
 					drawer.getPlanks()
 			);
 
-			Block planksBlock = woodType.getPlanks();
-
-			if (planksBlock == null) {
-				FunctionalStorageJS.LOGGER.error(
-						"Skipping drawer wood type {}: planks block {} is not registered. " +
-								"If it belongs to another mod, that mod must load before functional_storage_js",
-						drawer.getName(),
-						drawer.getPlanks()
-				);
-				continue;
-			}
-
-			if (woodType.getWood() == null) {
-				FunctionalStorageJS.LOGGER.error(
-						"Skipping drawer wood type {}: log block {} is not registered. " +
-								"If it belongs to another mod, that mod must load before functional_storage_js",
-						drawer.getName(),
-						drawer.getLog()
-				);
-				continue;
-			}
-
-			final Block finalPlanksBlock = planksBlock;
-
 			for (FunctionalStorage.DrawerType type : FunctionalStorage.DrawerType.values()) {
 				ResourceLocation id = drawerId(drawer, type);
-				BlockBehaviour.Properties properties = BlockBehaviour.Properties.copy(finalPlanksBlock);
 
-				BLOCKS.register(id.getPath(), () -> {
-					return new DrawerBlock(woodType, type, properties);
+				/*
+				 * 在 BLOCKS RegisterEvent 触发时解析木板方块, 而不是在 KubeJS 启动脚本运行时解析
+				 * 此时其他 Mod 的方块尚未完成注册
+				 * 如果被引用的 Mod 在本 Mod 之后加载, 则回退使用橡木木板的方块属性
+				 * 而不是跳过注册, 以确保抽屉仍然存在且可以被正常挖掘
+				 */
+				RegistryObject<Block> block = BLOCKS.register(id.getPath(), () -> {
+					Block planksBlock = woodType.getPlanks();
+
+					if (planksBlock == null) {
+						FunctionalStorageJS.LOGGER.warn(
+								"Drawer block {}: planks block {} is not registered yet, " +
+										"falling back to oak planks block properties",
+								id,
+								drawer.getPlanks()
+						);
+						planksBlock = Blocks.OAK_PLANKS;
+					}
+
+					return new DrawerBlock(
+							woodType,
+							type,
+							BlockBehaviour.Properties.copy(planksBlock)
+					);
 				});
+
+				REGISTERED_BLOCKS.put(id, block);
 
 				FunctionalStorageJS.LOGGER.info(
 						"Registered drawer block {}",
@@ -116,22 +109,14 @@ public class FSJSBlocks {
 	private static void registerDrawerItems() {
 		for (DrawerBuilder drawer : DRAWERS) {
 			for (FunctionalStorage.DrawerType type : FunctionalStorage.DrawerType.values()) {
-				String name = drawer.getName() + "_" + type.getSlots();
+				ResourceLocation id = drawerId(drawer, type);
+				RegistryObject<Block> block = REGISTERED_BLOCKS.get(id);
 
-				ITEMS.register(name, () -> {
-					RegistryObject<Block> block = BLOCKS.getEntries()
-							.stream()
-							.filter((entry) -> {
-								return entry.getId()
-										.getPath()
-										.equals(name);
-							})
-							.map((entry) -> {
-								return (RegistryObject<Block>) entry;
-							})
-							.findFirst()
-							.orElseThrow();
+				if (block == null) {
+					continue;
+				}
 
+				ITEMS.register(id.getPath(), () -> {
 					Item created = new DrawerBlock.DrawerItem(
 							(DrawerBlock) block.get(),
 							new Item.Properties(),

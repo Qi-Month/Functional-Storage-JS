@@ -108,24 +108,24 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 			for (int slots : DRAWER_SLOTS) {
 				String base = name + "_" + slots;
-				String model = MODID + ":block/" + base;
+				String model = drawer.getNamespace() + ":block/" + base;
 				String locked = model + "_locked";
 				String front = drawer.getFrontTexture() + "_" + slots;
 				String side = drawer.getSideTexture().toString();
 
-				generator.blockModel(loc(MODID, base), (modelGenerator) -> {
+				generator.blockModel(loc(drawer.getNamespace(), base), (modelGenerator) -> {
 					modelGenerator.parent("functionalstorage:block/base_x_" + slots);
 					modelGenerator.texture("particle", front);
 					modelGenerator.texture("front", front);
 					modelGenerator.texture("side", side);
 				});
 
-				generator.blockModel(loc(MODID, base + "_locked"), (modelGenerator) -> {
+				generator.blockModel(loc(drawer.getNamespace(), base + "_locked"), (modelGenerator) -> {
 					modelGenerator.parent(model);
 					modelGenerator.texture("lock_icon", "functionalstorage:block/lock");
 				});
 
-				generator.blockState(loc(MODID, base), (state) -> {
+				generator.blockState(loc(drawer.getNamespace(), base), (state) -> {
 					state.variant("locked=false,subfacing=east", (variant) -> {
 						variant.model(model)
 								.y(90)
@@ -166,7 +166,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 					});
 				});
 
-				generator.itemModel(loc(MODID, base), (modelGenerator) -> {
+				generator.itemModel(loc(drawer.getNamespace(), base), (modelGenerator) -> {
 					modelGenerator.parent("minecraft:builtin/entity");
 				});
 				copyFrontTexture(generator, drawer, slots);
@@ -174,7 +174,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 		}
 
 		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
-			generator.itemModel(loc(MODID, upgrade.getId().getPath()), (modelGenerator) -> {
+			generator.itemModel(upgrade.getId(), (modelGenerator) -> {
 				modelGenerator.parent("minecraft:item/generated");
 				modelGenerator.texture("layer0", upgrade.getTexture().toString());
 			});
@@ -239,14 +239,14 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 			String name = drawer.getName();
 			String display = toDisplayName(name);
 
-			event.add(MODID, "block." + MODID + "." + name + "_1", display + " Drawer (1x1)");
-			event.add(MODID, "block." + MODID + "." + name + "_2", display + " Drawer (1x2)");
-			event.add(MODID, "block." + MODID + "." + name + "_4", display + " Drawer (2x2)");
+			event.add(drawer.getNamespace(), "block." + drawer.getNamespace() + "." + name + "_1", display + " Drawer (1x1)");
+			event.add(drawer.getNamespace(), "block." + drawer.getNamespace() + "." + name + "_2", display + " Drawer (1x2)");
+			event.add(drawer.getNamespace(), "block." + drawer.getNamespace() + "." + name + "_4", display + " Drawer (2x2)");
 		}
 
 		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
-			event.add(MODID,
-					"item." + MODID + "." + upgrade.getId().getPath(),
+			event.add(upgrade.getId().getNamespace(),
+					"item." + upgrade.getId().getNamespace() + "." + upgrade.getId().getPath(),
 					toDisplayName(upgrade.getId().getPath()));
 		}
 	}
@@ -257,7 +257,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 		for (DrawerBuilder drawer : REGISTERED_DRAWERS) {
 			for (int slots : DRAWER_SLOTS) {
-				values.add(MODID + ":" + drawer.getName() + "_" + slots);
+				values.add(drawer.getNamespace() + ":" + drawer.getName() + "_" + slots);
 			}
 		}
 
@@ -280,7 +280,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 		}
 
 		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
-			upgradeValues.add(loc(MODID, upgrade.getId().getPath()).toString());
+			upgradeValues.add(upgrade.getId().toString());
 		}
 
 		if (!upgradeValues.isEmpty()) {
@@ -295,7 +295,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 		for (DrawerBuilder drawer : REGISTERED_DRAWERS) {
 			for (int slots : DRAWER_SLOTS) {
-				drawerItemValues.add(MODID + ":" + drawer.getName() + "_" + slots);
+				drawerItemValues.add(drawer.getNamespace() + ":" + drawer.getName() + "_" + slots);
 			}
 		}
 

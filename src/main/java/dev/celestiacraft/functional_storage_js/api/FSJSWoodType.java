@@ -8,13 +8,17 @@ import net.minecraftforge.registries.ForgeRegistries;
 /**
  * A drawer wood type registered from KubeJS startup scripts.
  * <p>
- * Wood/planks are resolved lazily from the block registry on every call, so the ids are valid even
- * though the startup scripts run before block registration happens.
+ * The log/planks ids are kept exactly as the script provided them (no registry round-trip at
+ * script time) and are resolved from the block registry when the drawer blocks are registered.
+ * Resolution uses `containsKey` instead of `getValue` so a not-yet-registered block
+ * returns `null` instead of the registry default (`minecraft:air`), which would
+ * otherwise silently give every drawer air-like block properties.
  * <p>
  * 从 KubeJS 启动脚本中注册的抽屉木材类型。
  * <p>
- * 木材/木板会在每次调用时从方块注册表中延迟解析，因此即使启动脚本运行时方块注册尚未完成，
- * 这些 ID 仍然有效。
+ * 原木/木板 id 会原样保留脚本传入的值(不在脚本阶段查询注册表), 并在抽屉方块注册时从方块注册表解析。
+ * 解析使用 `containsKey` 而不是 `getValue`, 因此尚未注册的方块会返回 `null`,
+ * 而不是注册表默认值(`minecraft:air`), 避免抽屉方块被静默地赋予空气方块属性。
  * <p>
  */
 public class FSJSWoodType implements IWoodType {
@@ -34,12 +38,22 @@ public class FSJSWoodType implements IWoodType {
 
 	@Override
 	public Block getWood() {
-		return ForgeRegistries.BLOCKS.getValue(wood);
+		return resolve(wood);
 	}
 
 	@Override
 	public Block getPlanks() {
-		return ForgeRegistries.BLOCKS.getValue(planks);
+		return resolve(planks);
+	}
+
+	private static Block resolve(ResourceLocation id) {
+		if (id == null) {
+			return null;
+		}
+
+		return ForgeRegistries.BLOCKS.containsKey(id)
+				? ForgeRegistries.BLOCKS.getValue(id)
+				: null;
 	}
 
 	@Override

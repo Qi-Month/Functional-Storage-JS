@@ -1,8 +1,8 @@
 package dev.celestiacraft.functional_storage_js.common.register;
 
 import com.buuz135.functionalstorage.FunctionalStorage;
-import dev.celestiacraft.functional_storage_js.FunctionalStorageJS;
 import com.buuz135.functionalstorage.block.DrawerBlock;
+import dev.celestiacraft.functional_storage_js.FunctionalStorageJS;
 import dev.celestiacraft.functional_storage_js.api.FSJSWoodType;
 import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuilder;
 import net.minecraft.resources.ResourceLocation;
@@ -10,23 +10,27 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class FSJSBlocks {
+
 	private static final List<DrawerBuilder> DRAWERS = new ArrayList<>();
-	private static final Map<String, RegistryObject<Block>> BLOCKS_BY_NAME = new HashMap<>();
 	private static boolean registered = false;
 
+	public static final DeferredRegister<Block> BLOCKS =
+			DeferredRegister.create(ForgeRegistries.BLOCKS, FunctionalStorageJS.MODID);
+
+	public static final DeferredRegister<Item> ITEMS =
+			DeferredRegister.create(ForgeRegistries.ITEMS, FunctionalStorageJS.MODID);
+
 	public static void register(IEventBus bus) {
-		bus.addListener(FSJSBlocks::onRegisterBlocks);
-		bus.addListener(FSJSBlocks::onRegisterItems);
+		BLOCKS.register(bus);
+		ITEMS.register(bus);
 	}
 
 	public static void registerDrawers(List<DrawerBuilder> drawers) {
@@ -36,53 +40,106 @@ public class FSJSBlocks {
 
 		DRAWERS.addAll(drawers);
 		registered = true;
+
+		registerDrawerBlocks();
+		registerDrawerItems();
 	}
 
 	public static ResourceLocation drawerId(DrawerBuilder drawer, FunctionalStorage.DrawerType type) {
-		return ResourceLocation.fromNamespaceAndPath(drawer.getNamespace(), drawer.getName() + "_" + type.getSlots());
+		return ResourceLocation.fromNamespaceAndPath(
+				FunctionalStorageJS.MODID,
+				drawer.getName() + "_" + type.getSlots()
+		);
 	}
 
 	public static RegistryObject<Block> getBlock(ResourceLocation id) {
-		return BLOCKS_BY_NAME.get(id.toString());
+		return BLOCKS.getEntries()
+				.stream()
+				.filter((entry) -> {
+					return entry.getId().equals(id);
+				})
+				.map((entry) -> {
+					return (RegistryObject<Block>) entry;
+				})
+				.findFirst()
+				.orElse(null);
 	}
 
-	private static void onRegisterBlocks(RegisterEvent event) {
-		if (!event.getRegistryKey().equals(ForgeRegistries.Keys.BLOCKS)) {
-			return;
-		}
-
+	private static void registerDrawerBlocks() {
 		for (DrawerBuilder drawer : DRAWERS) {
-			FSJSWoodType woodType = FSJSWoodType.of(drawer.getName(), drawer.getLog(), drawer.getPlanks());
+			FSJSWoodType woodType = FSJSWoodType.of(
+					drawer.getName(),
+					drawer.getLog(),
+					drawer.getPlanks()
+			);
+
+			Block planksBlock = woodType.getPlanks();
+
+			if (planksBlock == null) {
+				FunctionalStorageJS.LOGGER.error(
+						"Skipping drawer wood type {}: planks block {} is not registered. " +
+								"If it belongs to another mod, that mod must load before functional_storage_js",
+						drawer.getName(),
+						drawer.getPlanks()
+				);
+				continue;
+			}
+
+			if (woodType.getWood() == null) {
+				FunctionalStorageJS.LOGGER.error(
+						"Skipping drawer wood type {}: log block {} is not registered. " +
+								"If it belongs to another mod, that mod must load before functional_storage_js",
+						drawer.getName(),
+						drawer.getLog()
+				);
+				continue;
+			}
+
+			final Block finalPlanksBlock = planksBlock;
 
 			for (FunctionalStorage.DrawerType type : FunctionalStorage.DrawerType.values()) {
 				ResourceLocation id = drawerId(drawer, type);
+				BlockBehaviour.Properties properties = BlockBehaviour.Properties.copy(finalPlanksBlock);
 
-				event.register(ForgeRegistries.Keys.BLOCKS, id, () -> {
-					return new DrawerBlock(woodType, type, BlockBehaviour.Properties.copy(woodType.getPlanks()));
+				BLOCKS.register(id.getPath(), () -> {
+					return new DrawerBlock(woodType, type, properties);
 				});
-				BLOCKS_BY_NAME.put(id.toString(), RegistryObject.create(id, ForgeRegistries.BLOCKS));
-				FunctionalStorageJS.LOGGER.info("Registered drawer block {}", id);
+
+				FunctionalStorageJS.LOGGER.info(
+						"Registered drawer block {}",
+						id
+				);
 			}
 		}
 	}
 
-	private static void onRegisterItems(RegisterEvent event) {
-		if (!event.getRegistryKey().equals(ForgeRegistries.Keys.ITEMS)) {
-			return;
-		}
-
+	private static void registerDrawerItems() {
 		for (DrawerBuilder drawer : DRAWERS) {
 			for (FunctionalStorage.DrawerType type : FunctionalStorage.DrawerType.values()) {
-				ResourceLocation id = drawerId(drawer, type);
-				RegistryObject<Block> block = BLOCKS_BY_NAME.get(id.toString());
+				String name = drawer.getName() + "_" + type.getSlots();
 
-				if (block == null) {
-					continue;
-				}
+				ITEMS.register(name, () -> {
+					RegistryObject<Block> block = BLOCKS.getEntries()
+							.stream()
+							.filter((entry) -> {
+								return entry.getId()
+										.getPath()
+										.equals(name);
+							})
+							.map((entry) -> {
+								return (RegistryObject<Block>) entry;
+							})
+							.findFirst()
+							.orElseThrow();
 
-				event.register(ForgeRegistries.Keys.ITEMS, id, () -> {
-					Item created = new DrawerBlock.DrawerItem((DrawerBlock) block.get(), new Item.Properties(), FunctionalStorage.TAB);
+					Item created = new DrawerBlock.DrawerItem(
+							(DrawerBlock) block.get(),
+							new Item.Properties(),
+							FunctionalStorage.TAB
+					);
+
 					FunctionalStorage.TAB.getTabList().add(created);
+
 					return created;
 				});
 			}

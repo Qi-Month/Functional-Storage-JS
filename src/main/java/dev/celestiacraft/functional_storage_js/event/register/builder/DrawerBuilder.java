@@ -4,10 +4,7 @@ import dev.celestiacraft.functional_storage_js.FunctionalStorageJS;
 import dev.latvian.mods.kubejs.typings.Info;
 import dev.latvian.mods.kubejs.util.ConsoleJS;
 import lombok.Getter;
-import net.minecraft.ResourceLocationException;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.Block;
-import net.minecraftforge.registries.ForgeRegistries;
 
 @Getter
 public class DrawerBuilder {
@@ -34,16 +31,16 @@ public class DrawerBuilder {
 	@Info("""
 			Sets the `log` block used by the drawer
 			""")
-	public DrawerBuilder log(Block block) {
-		log = getBlockId(block, "log");
+	public DrawerBuilder log(ResourceLocation id) {
+		log = validate(id, "log");
 		return this;
 	}
 
 	@Info("""
 			Sets the planks block used by the drawer
 			""")
-	public DrawerBuilder planks(Block block) {
-		planks = getBlockId(block, "planks");
+	public DrawerBuilder planks(ResourceLocation id) {
+		planks = validate(id, "planks");
 		return this;
 	}
 
@@ -76,25 +73,9 @@ public class DrawerBuilder {
 		return sideTexture != null ? sideTexture : FunctionalStorageJS.loadResource("block/" + name + "_side");
 	}
 
-	private static ResourceLocation parse(String id, String kind) {
-		if (id == null || id.isBlank()) {
-			ConsoleJS.STARTUP.warn("Drawer %s block id is empty, skipped".formatted(kind));
-			return null;
-		}
-
-		try {
-			return ResourceLocation.parse(id);
-		} catch (ResourceLocationException exception) {
-			ConsoleJS.STARTUP.warn("Drawer %s block id is invalid: " + id, exception);
-			return null;
-		}
-	}
-
-	private static ResourceLocation getBlockId(Block block, String kind) {
-		ResourceLocation id = ForgeRegistries.BLOCKS.getKey(block);
-
+	private static ResourceLocation validate(ResourceLocation id, String kind) {
 		if (id == null) {
-			ConsoleJS.STARTUP.warn("Could not resolve the id of %s block: %s".formatted(kind, block));
+			ConsoleJS.STARTUP.warn("Drawer %s block id is null, skipped".formatted(kind));
 		}
 
 		return id;

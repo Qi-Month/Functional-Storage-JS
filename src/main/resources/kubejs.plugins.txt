@@ -1,1 +1,1 @@
-dev.celestiacraft.functional_storage_js.FunctionalStorageJS
+dev.celestiacraft.fsjs.FunctionalStorageJS

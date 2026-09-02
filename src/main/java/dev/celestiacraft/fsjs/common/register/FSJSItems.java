@@ -1,8 +1,8 @@
-package dev.celestiacraft.functional_storage_js.common.register;
+package dev.celestiacraft.fsjs.common.register;
 
 import com.buuz135.functionalstorage.FunctionalStorage;
-import dev.celestiacraft.functional_storage_js.event.register.builder.UpgradeBuilder;
-import dev.celestiacraft.functional_storage_js.item.FSJSUpgradeItem;
+import dev.celestiacraft.fsjs.event.register.builder.UpgradeBuilder;
+import dev.celestiacraft.fsjs.common.item.FSJSUpgradeItem;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;

@@ -1,8 +1,8 @@
-package dev.celestiacraft.functional_storage_js.common.register;
+package dev.celestiacraft.fsjs.common.register;
 
 import com.buuz135.functionalstorage.FunctionalStorage;
 import com.buuz135.functionalstorage.block.DrawerBlock;
-import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuilder;
+import dev.celestiacraft.fsjs.event.register.builder.DrawerBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;

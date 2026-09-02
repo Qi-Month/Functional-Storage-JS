@@ -1,4 +1,4 @@
-package dev.celestiacraft.functional_storage_js.event.register.builder;
+package dev.celestiacraft.fsjs.event.register.builder;
 
 import com.buuz135.functionalstorage.block.config.FunctionalStorageConfig;
 import com.buuz135.functionalstorage.item.StorageUpgradeItem;
@@ -33,6 +33,9 @@ public class UpgradeBuilder {
 	@Info("""
 			Sets the item storage multiplier.
 			Defaults to the tier multiplier from the Functional Storage config.
+			
+			Sets the item storage multiplier.
+			Defaults to the tier multiplier from the Functional Storage config.
 			""")
 	public UpgradeBuilder multiplier(int multiplier) {
 		this.multiplier = multiplier;
@@ -40,7 +43,8 @@ public class UpgradeBuilder {
 	}
 
 	@Info("""
-			Sets the fluid storage multiplier shown in the tooltip, Defaults to the item `multiplier / 2`.
+			Sets the fluid multiplier used by fluid drawers.
+			Defaults to `multiplier / 2`, which is what the vanilla storage upgrades do.
 			""")
 	public UpgradeBuilder fluidMultiplier(double multiplier) {
 		fluidMultiplier = multiplier;
@@ -48,7 +52,8 @@ public class UpgradeBuilder {
 	}
 
 	@Info("""
-			Sets the controller radius multiplier shown in the tooltip, Defaults to the `fluid multiplier / 2`.
+			Sets the controller range bonus added by this upgrade.
+			Defaults to `multiplier / 4`, which is what the vanilla storage upgrades do.
 			""")
 	public UpgradeBuilder rangeMultiplier(double multiplier) {
 		rangeMultiplier = multiplier;
@@ -96,7 +101,7 @@ public class UpgradeBuilder {
 	}
 
 	public double getRangeMultiplier() {
-		return rangeMultiplier < 0 ? getFluidMultiplier() / 2.0 : rangeMultiplier;
+		return rangeMultiplier < 0 ? getMultiplier() / 4.0 : rangeMultiplier;
 	}
 
 	public ResourceLocation getTexture() {
@@ -109,6 +114,8 @@ public class UpgradeBuilder {
 
 	public String baseName() {
 		String path = id.getPath();
-		return path.endsWith("_upgrade") ? path.substring(0, path.length() - "_upgrade".length()) : path;
+		return path.endsWith("_upgrade")
+				? path.substring(0, path.length() - "_upgrade".length())
+				: path;
 	}
 }

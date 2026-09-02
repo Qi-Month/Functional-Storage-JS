@@ -1,6 +1,6 @@
-package dev.celestiacraft.functional_storage_js.event.register.builder;
+package dev.celestiacraft.fsjs.event.register.builder;
 
-import dev.celestiacraft.functional_storage_js.FunctionalStorageJS;
+import dev.celestiacraft.fsjs.FunctionalStorageJS;
 import dev.latvian.mods.kubejs.typings.Info;
 import dev.latvian.mods.kubejs.util.ConsoleJS;
 import lombok.Getter;

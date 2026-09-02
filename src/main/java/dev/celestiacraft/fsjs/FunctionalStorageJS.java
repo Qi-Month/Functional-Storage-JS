@@ -1,17 +1,17 @@
-package dev.celestiacraft.functional_storage_js;
+package dev.celestiacraft.fsjs;
 
 import com.buuz135.functionalstorage.FunctionalStorage;
 import com.buuz135.functionalstorage.item.StorageUpgradeItem;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import dev.celestiacraft.functional_storage_js.api.FSJSWoodType;
-import dev.celestiacraft.functional_storage_js.common.register.FSJSBlockEntity;
-import dev.celestiacraft.functional_storage_js.common.register.FSJSBlocks;
-import dev.celestiacraft.functional_storage_js.common.register.FSJSItems;
-import dev.celestiacraft.functional_storage_js.event.FunctionalStorageJSEvents;
-import dev.celestiacraft.functional_storage_js.event.register.FunctionalStorageRegisterEventJS;
-import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuilder;
-import dev.celestiacraft.functional_storage_js.event.register.builder.UpgradeBuilder;
+import dev.celestiacraft.fsjs.api.FSJSWoodType;
+import dev.celestiacraft.fsjs.common.register.FSJSBlockEntity;
+import dev.celestiacraft.fsjs.common.register.FSJSBlocks;
+import dev.celestiacraft.fsjs.common.register.FSJSItems;
+import dev.celestiacraft.fsjs.event.FunctionalStorageJSEvents;
+import dev.celestiacraft.fsjs.event.register.FunctionalStorageRegisterEventJS;
+import dev.celestiacraft.fsjs.event.register.builder.DrawerBuilder;
+import dev.celestiacraft.fsjs.event.register.builder.UpgradeBuilder;
 import dev.latvian.mods.kubejs.KubeJSPaths;
 import dev.latvian.mods.kubejs.KubeJSPlugin;
 import dev.latvian.mods.kubejs.client.LangEventJS;

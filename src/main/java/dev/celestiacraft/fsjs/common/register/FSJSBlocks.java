@@ -1,10 +1,10 @@
-package dev.celestiacraft.functional_storage_js.common.register;
+package dev.celestiacraft.fsjs.common.register;
 
 import com.buuz135.functionalstorage.FunctionalStorage;
 import com.buuz135.functionalstorage.block.DrawerBlock;
-import dev.celestiacraft.functional_storage_js.FunctionalStorageJS;
-import dev.celestiacraft.functional_storage_js.api.FSJSWoodType;
-import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuilder;
+import dev.celestiacraft.fsjs.FunctionalStorageJS;
+import dev.celestiacraft.fsjs.api.FSJSWoodType;
+import dev.celestiacraft.fsjs.event.register.builder.DrawerBuilder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;

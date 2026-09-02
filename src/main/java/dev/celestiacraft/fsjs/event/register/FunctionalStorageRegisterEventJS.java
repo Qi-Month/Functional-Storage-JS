@@ -1,10 +1,10 @@
-package dev.celestiacraft.functional_storage_js.event.register;
+package dev.celestiacraft.fsjs.event.register;
 
 import com.buuz135.functionalstorage.util.DrawerWoodType;
 import com.buuz135.functionalstorage.util.IWoodType;
-import dev.celestiacraft.functional_storage_js.api.FSJSWoodType;
-import dev.celestiacraft.functional_storage_js.event.register.builder.DrawerBuilder;
-import dev.celestiacraft.functional_storage_js.event.register.builder.UpgradeBuilder;
+import dev.celestiacraft.fsjs.api.FSJSWoodType;
+import dev.celestiacraft.fsjs.event.register.builder.DrawerBuilder;
+import dev.celestiacraft.fsjs.event.register.builder.UpgradeBuilder;
 import dev.latvian.mods.kubejs.event.EventJS;
 import dev.latvian.mods.kubejs.typings.Info;
 import dev.latvian.mods.kubejs.util.ConsoleJS;

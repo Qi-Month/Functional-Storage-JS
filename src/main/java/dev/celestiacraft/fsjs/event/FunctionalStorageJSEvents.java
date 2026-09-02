@@ -1,6 +1,6 @@
-package dev.celestiacraft.functional_storage_js.event;
+package dev.celestiacraft.fsjs.event;
 
-import dev.celestiacraft.functional_storage_js.event.register.FunctionalStorageRegisterEventJS;
+import dev.celestiacraft.fsjs.event.register.FunctionalStorageRegisterEventJS;
 import dev.latvian.mods.kubejs.event.EventGroup;
 import dev.latvian.mods.kubejs.event.EventHandler;
 

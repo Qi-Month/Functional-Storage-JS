@@ -1,10 +1,11 @@
 {
 	"required": true,
 	"minVersion": "0.8",
-	"package": "dev.celestiacraft.functional_storage_js.mixin",
+	"package": "dev.celestiacraft.fsjs.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"refmap": "functional_storage_js.refmap.json",
 	"mixins": [
+		"ControllableDrawerTileMixin"
 	],
 	"client": [
 	],

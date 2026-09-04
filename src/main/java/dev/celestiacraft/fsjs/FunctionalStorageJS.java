@@ -55,6 +55,10 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 		return loc(MODID, path);
 	}
 
+	public static ResourceLocation loadFunctionalStorage(String path) {
+		return loc(FunctionalStorage.MOD_ID, path);
+	}
+
 	public FunctionalStorageJS() {
 	}
 
@@ -195,7 +199,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 	private static void copyFrontTexture(AssetJsonGenerator generator, DrawerBuilder drawer, int slots) {
 		ResourceLocation frontBase = drawer.getFrontTexture();
 		ResourceLocation source = loc(frontBase.getNamespace(), "textures/" + frontBase.getPath() + "_" + slots + ".png");
-		ResourceLocation target = loc("functionalstorage", "textures/block/" + drawer.getName() + "_front_" + slots + ".png");
+		ResourceLocation target = loadFunctionalStorage("textures/block/" + drawer.getName() + "_front_" + slots + ".png");
 
 		byte[] bytes = readTexture(source);
 
@@ -245,9 +249,11 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 		}
 
 		for (UpgradeBuilder upgrade : REGISTERED_UPGRADES) {
-			event.add(upgrade.getId().getNamespace(),
+			event.add(
+					upgrade.getId().getNamespace(),
 					"item." + upgrade.getId().getNamespace() + "." + upgrade.getId().getPath(),
-					toDisplayName(upgrade.getId().getPath()));
+					toDisplayName(upgrade.getId().getPath())
+			);
 		}
 	}
 
@@ -288,7 +294,7 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 			json.addProperty("replace", false);
 			json.add("values", upgradeValues);
-			generator.json(loc("functionalstorage", "tags/items/upgrades"), json);
+			generator.json(loadFunctionalStorage("tags/items/upgrades"), json);
 		}
 
 		JsonArray drawerItemValues = new JsonArray();
@@ -304,12 +310,13 @@ public class FunctionalStorageJS extends KubeJSPlugin {
 
 			drawerTag.addProperty("replace", false);
 			drawerTag.add("values", drawerItemValues);
-			generator.json(loc("functionalstorage", "tags/items/drawer"), drawerTag);
+			generator.json(loadFunctionalStorage("tags/items/drawer"), drawerTag);
 		}
 	}
 
 	/**
 	 * 我说写那么长一串 {@link ResourceLocation#fromNamespaceAndPath(String, String)} 很烦有没有懂的
+	 *
 	 * @param namespace
 	 * @param path
 	 * @return

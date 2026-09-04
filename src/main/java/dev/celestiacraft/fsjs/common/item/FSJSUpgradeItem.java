@@ -1,15 +1,28 @@
 package dev.celestiacraft.fsjs.common.item;
 
+import com.buuz135.functionalstorage.block.tile.ControllableDrawerTile;
+import com.buuz135.functionalstorage.block.tile.FluidDrawerTile;
+import com.buuz135.functionalstorage.block.tile.StorageControllerTile;
 import com.buuz135.functionalstorage.item.StorageUpgradeItem;
 import com.hrznstudio.titanium.item.BasicItem;
+import dev.celestiacraft.fsjs.FunctionalStorageJS;
+import dev.celestiacraft.fsjs.api.UpgradeContext;
+import dev.celestiacraft.fsjs.api.UpgradeTooltipConsumer;
 import dev.celestiacraft.fsjs.event.register.builder.UpgradeBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.text.DecimalFormat;
 import java.util.List;
 
+@Mod.EventBusSubscriber(value = Dist.CLIENT, modid = FunctionalStorageJS.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class FSJSUpgradeItem extends StorageUpgradeItem {
 	private final UpgradeBuilder builder;
 
@@ -18,8 +31,48 @@ public class FSJSUpgradeItem extends StorageUpgradeItem {
 		this.builder = builder;
 	}
 
+	@SubscribeEvent
+	public static void onItemTooltip(ItemTooltipEvent event) {
+		ItemStack stack = event.getItemStack();
+		List<Component> tooltip = event.getToolTip();
+		TooltipFlag flags = event.getFlags();
+		Player player = event.getEntity();
+
+		if (!(stack.getItem() instanceof FSJSUpgradeItem upgrade)) {
+			return;
+		}
+
+		UpgradeTooltipConsumer consumer = upgrade.builder.getTooltipConsumer();
+
+		if (consumer == null) {
+			return;
+		}
+
+		consumer.accept(tooltip, flags, player, stack);
+	}
+
+	public UpgradeTooltipConsumer getTooltipConsumer() {
+		return builder.getTooltipConsumer();
+	}
+
 	@Override
 	public int getStorageMultiplier() {
+		ControllableDrawerTile<?> tile = UpgradeContext.currentTile();
+
+		if (tile == null) {
+			return builder.getMultiplier();
+		}
+
+		double divisor = tile.getStorageDiv();
+
+		if (tile instanceof FluidDrawerTile) {
+			return (int) Math.round(builder.getFluidMultiplier() * divisor);
+		}
+
+		if (tile instanceof StorageControllerTile) {
+			return (int) Math.round(builder.getRangeMultiplier() * divisor);
+		}
+
 		return builder.getMultiplier();
 	}
 
@@ -28,20 +81,10 @@ public class FSJSUpgradeItem extends StorageUpgradeItem {
 		return builder.isFoil();
 	}
 
-	/**
-	 * 物品抽屉使用的倍率({@link getStorageMultiplier} 已经返回该倍率)
-	 * <p>
-	 * 在此处提供该值, 以便 Mixin 能与流体倍率和范围倍率一起读取
-	 */
 	public double getFluidMultiplier() {
 		return builder.getFluidMultiplier();
 	}
 
-	/**
-	 * 此升级为抽屉控制器增加的范围加成(以方块为单位)
-	 * <p>
-	 * 在此处提供该值, 以便 Mixin 读取
-	 */
 	public double getRangeMultiplier() {
 		return builder.getRangeMultiplier();
 	}
@@ -56,11 +99,10 @@ public class FSJSUpgradeItem extends StorageUpgradeItem {
 		DecimalFormat format = new DecimalFormat();
 
 		tooltip.add(Component.translatable("storageupgrade.desc.item").withStyle(ChatFormatting.GRAY)
-				.append(format.format(getStorageMultiplier())));
+				.append(format.format(builder.getMultiplier())));
 		tooltip.add(Component.translatable("storageupgrade.desc.fluid").withStyle(ChatFormatting.GRAY)
 				.append(format.format(getFluidMultiplier())));
 		tooltip.add(Component.translatable("storageupgrade.desc.range", format.format(getRangeMultiplier()))
 				.withStyle(ChatFormatting.GRAY));
-		tooltip.addAll(builder.getTooltip());
 	}
 }

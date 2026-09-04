@@ -13,7 +13,7 @@ FunctionalStorageJSEvents.register((event) => {
             .sideTexture("kubejs:block/aaaa/rubberwood_side")
     })
 })
-````
+```
 
 Registering a drawer will automatically register the **1x1, 1x2, and 2x2** variants.
 

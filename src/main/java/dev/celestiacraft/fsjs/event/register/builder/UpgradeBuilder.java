@@ -2,14 +2,10 @@ package dev.celestiacraft.fsjs.event.register.builder;
 
 import com.buuz135.functionalstorage.block.config.FunctionalStorageConfig;
 import com.buuz135.functionalstorage.item.StorageUpgradeItem;
+import dev.celestiacraft.fsjs.api.UpgradeTooltipConsumer;
 import dev.latvian.mods.kubejs.typings.Info;
 import lombok.Getter;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
 
 @Getter
 public class UpgradeBuilder {
@@ -18,7 +14,7 @@ public class UpgradeBuilder {
 	private double fluidMultiplier = -1;
 	private double rangeMultiplier = -1;
 	private ResourceLocation texture;
-	private final List<Component> tooltip = new ArrayList<>();
+	private UpgradeTooltipConsumer tooltipConsumer;
 	private boolean foil = false;
 	private boolean addToTab = true;
 
@@ -69,10 +65,12 @@ public class UpgradeBuilder {
 	}
 
 	@Info("""
-			Adds extra tooltip lines
+			Adds extra tooltip lines.
+			The consumer is invoked every time the item tooltip renders, with the actual
+			tooltip list, TooltipFlag, Player and ItemStack.
 			""")
-	public UpgradeBuilder tooltip(Consumer<List<Component>> consumer) {
-		consumer.accept(tooltip);
+	public UpgradeBuilder tooltip(UpgradeTooltipConsumer consumer) {
+		tooltipConsumer = consumer;
 		return this;
 	}
 
